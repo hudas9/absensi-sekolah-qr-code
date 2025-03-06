@@ -57,6 +57,10 @@ class JurusanController extends BaseController
      */
     public function tambahJurusan()
     {
+        if (user()->toArray()['is_superadmin'] != '1') {
+            return redirect()->to('admin/jurusan');
+        }
+
         $data = [
             'ctx' => 'kelas',
             'title' => 'Tambah Data Jurusan',
@@ -71,6 +75,10 @@ class JurusanController extends BaseController
      */
     public function tambahJurusanPost()
     {
+        if (user()->toArray()['is_superadmin'] != '1') {
+            return redirect()->to('admin/jurusan');
+        }
+
         $val = \Config\Services::validation();
         $val->setRule('jurusan', 'Jurusan', 'required|max_length[32]|is_unique[tb_jurusan.jurusan]');
 
@@ -97,6 +105,10 @@ class JurusanController extends BaseController
      */
     public function editJurusan($id)
     {
+        if (user()->toArray()['is_superadmin'] != '1') {
+            return redirect()->to('admin/jurusan');
+        }
+
         $data['title'] = 'Edit Jurusan';
         $data['ctx'] = 'kelas';
         $data['jurusan'] = $this->jurusanModel->getJurusan($id);
@@ -114,6 +126,10 @@ class JurusanController extends BaseController
      */
     public function editJurusanPost()
     {
+        if (user()->toArray()['is_superadmin'] != '1') {
+            return redirect()->to('admin/jurusan');
+        }
+
         $val = \Config\Services::validation();
         $val->setRule('jurusan', 'Jurusan', 'required|max_length[32]|is_unique[tb_jurusan.jurusan]');
         if (!$this->validate(getValRules($val))) {
@@ -138,6 +154,9 @@ class JurusanController extends BaseController
      */
     public function deleteJurusanPost($id = null)
     {
+        if (user()->toArray()['is_superadmin'] != '1') {
+            return redirect()->to('admin/jurusan');
+        }
         $id = inputPost('id');
         $jurusan = $this->jurusanModel->getJurusan($id);
         if (!empty($jurusan)) {

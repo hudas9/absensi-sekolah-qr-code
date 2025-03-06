@@ -17,6 +17,10 @@ class GeneralSettings extends BaseController
 
     public function index()
     {
+        if (user()->toArray()['is_superadmin'] != '1') {
+            return redirect()->to('admin');
+        }
+
         $data['title'] = 'Pengaturan Utama';
         $data['ctx'] = 'general_settings';
 
@@ -25,6 +29,10 @@ class GeneralSettings extends BaseController
 
     public function generalSettingsPost()
     {
+        if (user()->toArray()['is_superadmin'] != '1') {
+            return redirect()->to('admin');
+        }
+
         $val = \Config\Services::validation();
         $val->setRule('school_name', 'Nama Sekolah', 'required|max_length[200]');
         $val->setRule('school_year', 'Tahun Ajaran', 'required|max_length[200]');

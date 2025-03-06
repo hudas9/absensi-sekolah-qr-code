@@ -12,302 +12,342 @@ use CodeIgniter\Exceptions\PageNotFoundException;
 
 class DataSiswa extends BaseController
 {
-   protected SiswaModel $siswaModel;
-   protected KelasModel $kelasModel;
-   protected JurusanModel $jurusanModel;
+    protected SiswaModel $siswaModel;
+    protected KelasModel $kelasModel;
+    protected JurusanModel $jurusanModel;
 
-   protected $siswaValidationRules = [
-      'nis' => [
-         'rules' => 'required|max_length[20]|min_length[4]',
-         'errors' => [
-            'required' => 'NIS harus diisi.',
-            'is_unique' => 'NIS ini telah terdaftar.',
-            'min_length[4]' => 'Panjang NIS minimal 4 karakter'
-         ]
-      ],
-      'nama' => [
-         'rules' => 'required|min_length[3]',
-         'errors' => [
-            'required' => 'Nama harus diisi'
-         ]
-      ],
-      'id_kelas' => [
-         'rules' => 'required',
-         'errors' => [
-            'required' => 'Kelas harus diisi'
-         ]
-      ],
-      'jk' => ['rules' => 'required', 'errors' => ['required' => 'Jenis kelamin wajib diisi']],
-      'no_hp' => 'required|numeric|max_length[20]|min_length[5]'
-   ];
+    protected $siswaValidationRules = [
+        'nis' => [
+            'rules' => 'required|max_length[20]|min_length[4]',
+            'errors' => [
+                'required' => 'NIS harus diisi.',
+                'is_unique' => 'NIS ini telah terdaftar.',
+                'min_length[4]' => 'Panjang NIS minimal 4 karakter'
+            ]
+        ],
+        'nama' => [
+            'rules' => 'required|min_length[3]',
+            'errors' => [
+                'required' => 'Nama harus diisi'
+            ]
+        ],
+        'id_kelas' => [
+            'rules' => 'required',
+            'errors' => [
+                'required' => 'Kelas harus diisi'
+            ]
+        ],
+        'jk' => ['rules' => 'required', 'errors' => ['required' => 'Jenis kelamin wajib diisi']],
+        'no_hp' => 'required|numeric|max_length[20]|min_length[5]'
+    ];
 
-   public function __construct()
-   {
-      $this->siswaModel = new SiswaModel();
-      $this->kelasModel = new KelasModel();
-      $this->jurusanModel = new JurusanModel();
-   }
+    public function __construct()
+    {
+        $this->siswaModel = new SiswaModel();
+        $this->kelasModel = new KelasModel();
+        $this->jurusanModel = new JurusanModel();
+    }
 
-   public function index()
-   {
-      $data = [
-         'title' => 'Data Siswa',
-         'ctx' => 'siswa',
-         'kelas' => $this->kelasModel->getDataKelas(),
-         'jurusan' => $this->jurusanModel->getDataJurusan()
-      ];
+    public function index()
+    {
+        $data = [
+            'title' => 'Data Siswa',
+            'ctx' => 'siswa',
+            'kelas' => $this->kelasModel->getDataKelas(),
+            'jurusan' => $this->jurusanModel->getDataJurusan()
+        ];
 
-      return view('admin/data/data-siswa', $data);
-   }
+        return view('admin/data/data-siswa', $data);
+    }
 
-   public function ambilDataSiswa()
-   {
-      $kelas = $this->request->getVar('kelas') ?? null;
-      $jurusan = $this->request->getVar('jurusan') ?? null;
+    public function ambilDataSiswa()
+    {
+        $kelas = $this->request->getVar('kelas') ?? null;
+        $jurusan = $this->request->getVar('jurusan') ?? null;
 
-      $result = $this->siswaModel->getAllSiswaWithKelas($kelas, $jurusan);
+        $result = $this->siswaModel->getAllSiswaWithKelas($kelas, $jurusan);
 
-      $data = [
-         'data' => $result,
-         'empty' => empty($result)
-      ];
+        $data = [
+            'data' => $result,
+            'empty' => empty($result)
+        ];
 
-      return view('admin/data/list-data-siswa', $data);
-   }
+        return view('admin/data/list-data-siswa', $data);
+    }
 
-   public function formTambahSiswa()
-   {
-      $kelas = $this->kelasModel->getDataKelas();
+    public function formTambahSiswa()
+    {
+        if (user()->toArray()['is_superadmin'] != '1') {
+            return redirect()->to('admin/siswa');
+        }
 
-      $data = [
-         'ctx' => 'siswa',
-         'kelas' => $kelas,
-         'title' => 'Tambah Data Siswa'
-      ];
+        $kelas = $this->kelasModel->getDataKelas();
 
-      return view('admin/data/create/create-data-siswa', $data);
-   }
-
-   public function saveSiswa()
-   {
-      // validasi
-      if (!$this->validate($this->siswaValidationRules)) {
-         $kelas = $this->kelasModel->getDataKelas();
-
-         $data = [
+        $data = [
             'ctx' => 'siswa',
             'kelas' => $kelas,
-            'title' => 'Tambah Data Siswa',
-            'validation' => $this->validator,
-            'oldInput' => $this->request->getVar()
-         ];
-         return view('/admin/data/create/create-data-siswa', $data);
-      }
+            'title' => 'Tambah Data Siswa'
+        ];
 
-      // simpan
-      $result = $this->siswaModel->createSiswa(
-         nis: $this->request->getVar('nis'),
-         nama: $this->request->getVar('nama'),
-         idKelas: intval($this->request->getVar('id_kelas')),
-         jenisKelamin: $this->request->getVar('jk'),
-         noHp: $this->request->getVar('no_hp'),
-      );
+        return view('admin/data/create/create-data-siswa', $data);
+    }
 
-      if ($result) {
-         session()->setFlashdata([
-            'msg' => 'Tambah data berhasil',
-            'error' => false
-         ]);
-         return redirect()->to('/admin/siswa');
-      }
+    public function saveSiswa()
+    {
+        if (user()->toArray()['is_superadmin'] != '1') {
+            return redirect()->to('admin/siswa');
+        }
 
-      session()->setFlashdata([
-         'msg' => 'Gagal menambah data',
-         'error' => true
-      ]);
-      return redirect()->to('/admin/siswa/create');
-   }
+        // validasi
+        if (!$this->validate($this->siswaValidationRules)) {
+            $kelas = $this->kelasModel->getDataKelas();
 
-   public function formEditSiswa($id)
-   {
-      $siswa = $this->siswaModel->getSiswaById($id);
-      $kelas = $this->kelasModel->getDataKelas();
+            $data = [
+                'ctx' => 'siswa',
+                'kelas' => $kelas,
+                'title' => 'Tambah Data Siswa',
+                'validation' => $this->validator,
+                'oldInput' => $this->request->getVar()
+            ];
+            return view('/admin/data/create/create-data-siswa', $data);
+        }
 
-      if (empty($siswa) || empty($kelas)) {
-         throw new PageNotFoundException('Data siswa dengan id ' . $id . ' tidak ditemukan');
-      }
+        // simpan
+        $result = $this->siswaModel->createSiswa(
+            nis: $this->request->getVar('nis'),
+            nama: $this->request->getVar('nama'),
+            idKelas: intval($this->request->getVar('id_kelas')),
+            jenisKelamin: $this->request->getVar('jk'),
+            noHp: $this->request->getVar('no_hp'),
+        );
 
-      $data = [
-         'data' => $siswa,
-         'kelas' => $kelas,
-         'ctx' => 'siswa',
-         'title' => 'Edit Siswa',
-      ];
+        if ($result) {
+            session()->setFlashdata([
+                'msg' => 'Tambah data berhasil',
+                'error' => false
+            ]);
+            return redirect()->to('/admin/siswa');
+        }
 
-      return view('admin/data/edit/edit-data-siswa', $data);
-   }
+        session()->setFlashdata([
+            'msg' => 'Gagal menambah data',
+            'error' => true
+        ]);
+        return redirect()->to('/admin/siswa/create');
+    }
 
-   public function updateSiswa()
-   {
-      $idSiswa = $this->request->getVar('id');
+    public function formEditSiswa($id)
+    {
+        if (user()->toArray()['is_superadmin'] != '1') {
+            return redirect()->to('admin/siswa');
+        }
 
-      $siswaLama = $this->siswaModel->getSiswaById($idSiswa);
+        $siswa = $this->siswaModel->getSiswaById($id);
+        $kelas = $this->kelasModel->getDataKelas();
 
-      if ($siswaLama['nis'] != $this->request->getVar('nis')) {
-         $this->siswaValidationRules['nis']['rules'] = 'required|max_length[20]|min_length[4]|is_unique[tb_siswa.nis]';
-      }
+        if (empty($siswa) || empty($kelas)) {
+            throw new PageNotFoundException('Data siswa dengan id ' . $id . ' tidak ditemukan');
+        }
 
-      // validasi
-      if (!$this->validate($this->siswaValidationRules)) {
-         $siswa = $this->siswaModel->getSiswaById($idSiswa);
-         $kelas = $this->kelasModel->getDataKelas();
-
-         $data = [
+        $data = [
             'data' => $siswa,
             'kelas' => $kelas,
             'ctx' => 'siswa',
             'title' => 'Edit Siswa',
-            'validation' => $this->validator,
-            'oldInput' => $this->request->getVar()
-         ];
-         return view('/admin/data/edit/edit-data-siswa', $data);
-      }
+        ];
 
-      // update
-      $result = $this->siswaModel->updateSiswa(
-         id: $idSiswa,
-         nis: $this->request->getVar('nis'),
-         nama: $this->request->getVar('nama'),
-         idKelas: intval($this->request->getVar('id_kelas')),
-         jenisKelamin: $this->request->getVar('jk'),
-         noHp: $this->request->getVar('no_hp'),
-      );
+        return view('admin/data/edit/edit-data-siswa', $data);
+    }
 
-      if ($result) {
-         session()->setFlashdata([
-            'msg' => 'Edit data berhasil',
-            'error' => false
-         ]);
-         return redirect()->to('/admin/siswa');
-      }
+    public function updateSiswa()
+    {
+        if (user()->toArray()['is_superadmin'] != '1') {
+            return redirect()->to('admin/siswa');
+        }
 
-      session()->setFlashdata([
-         'msg' => 'Gagal mengubah data',
-         'error' => true
-      ]);
-      return redirect()->to('/admin/siswa/edit/' . $idSiswa);
-   }
+        $idSiswa = $this->request->getVar('id');
 
-   public function delete($id)
-   {
-      $result = $this->siswaModel->delete($id);
+        $siswaLama = $this->siswaModel->getSiswaById($idSiswa);
 
-      if ($result) {
-         session()->setFlashdata([
-            'msg' => 'Data berhasil dihapus',
-            'error' => false
-         ]);
-         return redirect()->to('/admin/siswa');
-      }
+        if ($siswaLama['nis'] != $this->request->getVar('nis')) {
+            $this->siswaValidationRules['nis']['rules'] = 'required|max_length[20]|min_length[4]|is_unique[tb_siswa.nis]';
+        }
 
-      session()->setFlashdata([
-         'msg' => 'Gagal menghapus data',
-         'error' => true
-      ]);
-      return redirect()->to('/admin/siswa');
-   }
+        // validasi
+        if (!$this->validate($this->siswaValidationRules)) {
+            $siswa = $this->siswaModel->getSiswaById($idSiswa);
+            $kelas = $this->kelasModel->getDataKelas();
 
-   /**
-    * Delete Selected Posts
-    */
-   public function deleteSelectedSiswa()
-   {
-      $siswaIds = inputPost('siswa_ids');
-      $this->siswaModel->deleteMultiSelected($siswaIds);
-   }
+            $data = [
+                'data' => $siswa,
+                'kelas' => $kelas,
+                'ctx' => 'siswa',
+                'title' => 'Edit Siswa',
+                'validation' => $this->validator,
+                'oldInput' => $this->request->getVar()
+            ];
+            return view('/admin/data/edit/edit-data-siswa', $data);
+        }
 
-   /*
+        // update
+        $result = $this->siswaModel->updateSiswa(
+            id: $idSiswa,
+            nis: $this->request->getVar('nis'),
+            nama: $this->request->getVar('nama'),
+            idKelas: intval($this->request->getVar('id_kelas')),
+            jenisKelamin: $this->request->getVar('jk'),
+            noHp: $this->request->getVar('no_hp'),
+        );
+
+        if ($result) {
+            session()->setFlashdata([
+                'msg' => 'Edit data berhasil',
+                'error' => false
+            ]);
+            return redirect()->to('/admin/siswa');
+        }
+
+        session()->setFlashdata([
+            'msg' => 'Gagal mengubah data',
+            'error' => true
+        ]);
+        return redirect()->to('/admin/siswa/edit/' . $idSiswa);
+    }
+
+    public function delete($id)
+    {
+        if (user()->toArray()['is_superadmin'] != '1') {
+            return redirect()->to('admin/siswa');
+        }
+
+        $result = $this->siswaModel->delete($id);
+
+        if ($result) {
+            session()->setFlashdata([
+                'msg' => 'Data berhasil dihapus',
+                'error' => false
+            ]);
+            return redirect()->to('/admin/siswa');
+        }
+
+        session()->setFlashdata([
+            'msg' => 'Gagal menghapus data',
+            'error' => true
+        ]);
+        return redirect()->to('/admin/siswa');
+    }
+
+    /**
+     * Delete Selected Posts
+     */
+    public function deleteSelectedSiswa()
+    {
+        if (user()->toArray()['is_superadmin'] != '1') {
+            return redirect()->to('admin/siswa');
+        }
+
+        $siswaIds = inputPost('siswa_ids');
+        $this->siswaModel->deleteMultiSelected($siswaIds);
+    }
+
+    /*
     *-------------------------------------------------------------------------------------------------
     * IMPORT SISWA
     *-------------------------------------------------------------------------------------------------
     */
 
-   /**
-    * Bulk Post Upload
-    */
-   public function bulkPostSiswa()
-   {
-      $data['title'] = 'Import Siswa';
-      $data['ctx'] = 'siswa';
-      $data['kelas'] = $this->kelasModel->getDataKelas();
+    /**
+     * Bulk Post Upload
+     */
+    public function bulkPostSiswa()
+    {
+        if (user()->toArray()['is_superadmin'] != '1') {
+            return redirect()->to('admin/siswa');
+        }
 
-      return view('/admin/data/import-siswa', $data);
-   }
+        $data['title'] = 'Import Siswa';
+        $data['ctx'] = 'siswa';
+        $data['kelas'] = $this->kelasModel->getDataKelas();
 
-   /**
-    * Generate CSV Object Post
-    */
-   public function generateCSVObjectPost()
-   {
-      $uploadModel = new UploadModel();
-      //delete old txt files
-      $files = glob(FCPATH . 'uploads/tmp/*.txt');
-      if (!empty($files)) {
-         foreach ($files as $item) {
-            @unlink($item);
-         }
-      }
-      $file = $uploadModel->uploadCSVFile('file');
-      if (!empty($file) && !empty($file['path'])) {
-         $obj = $this->siswaModel->generateCSVObject($file['path']);
-         if (!empty($obj)) {
+        return view('/admin/data/import-siswa', $data);
+    }
+
+    /**
+     * Generate CSV Object Post
+     */
+    public function generateCSVObjectPost()
+    {
+        if (user()->toArray()['is_superadmin'] != '1') {
+            return redirect()->to('admin/siswa');
+        }
+
+        $uploadModel = new UploadModel();
+        //delete old txt files
+        $files = glob(FCPATH . 'uploads/tmp/*.txt');
+        if (!empty($files)) {
+            foreach ($files as $item) {
+                @unlink($item);
+            }
+        }
+        $file = $uploadModel->uploadCSVFile('file');
+        if (!empty($file) && !empty($file['path'])) {
+            $obj = $this->siswaModel->generateCSVObject($file['path']);
+            if (!empty($obj)) {
+                $data = [
+                    'result' => 1,
+                    'numberOfItems' => $obj->numberOfItems,
+                    'txtFileName' => $obj->txtFileName,
+                ];
+                echo json_encode($data);
+                exit();
+            }
+        }
+        echo json_encode(['result' => 0]);
+    }
+
+    /**
+     * Import CSV Item Post
+     */
+    public function importCSVItemPost()
+    {
+        if (user()->toArray()['is_superadmin'] != '1') {
+            return redirect()->to('admin/siswa');
+        }
+
+        $txtFileName = inputPost('txtFileName');
+        $index = inputPost('index');
+        $siswa = $this->siswaModel->importCSVItem($txtFileName, $index);
+        if (!empty($siswa)) {
             $data = [
-               'result' => 1,
-               'numberOfItems' => $obj->numberOfItems,
-               'txtFileName' => $obj->txtFileName,
+                'result' => 1,
+                'siswa' => $siswa,
+                'index' => $index
             ];
             echo json_encode($data);
-            exit();
-         }
-      }
-      echo json_encode(['result' => 0]);
-   }
+        } else {
+            $data = [
+                'result' => 0,
+                'index' => $index
+            ];
+            echo json_encode($data);
+        }
+    }
 
-   /**
-    * Import CSV Item Post
-    */
-   public function importCSVItemPost()
-   {
-      $txtFileName = inputPost('txtFileName');
-      $index = inputPost('index');
-      $siswa = $this->siswaModel->importCSVItem($txtFileName, $index);
-      if (!empty($siswa)) {
-         $data = [
-            'result' => 1,
-            'siswa' => $siswa,
-            'index' => $index
-         ];
-         echo json_encode($data);
-      } else {
-         $data = [
-            'result' => 0,
-            'index' => $index
-         ];
-         echo json_encode($data);
-      }
-   }
+    /**
+     * Download CSV File Post
+     */
+    public function downloadCSVFilePost()
+    {
+        if (user()->toArray()['is_superadmin'] != '1') {
+            return redirect()->to('admin/siswa');
+        }
 
-   /**
-    * Download CSV File Post
-    */
-   public function downloadCSVFilePost()
-   {
-      $submit = inputPost('submit');
-      $response = \Config\Services::response();
-      if ($submit == 'csv_siswa_template') {
-         return $response->download(FCPATH . 'assets/file/csv_siswa_template.csv', null);
-      } elseif ($submit == 'csv_guru_template') {
-         return $response->download(FCPATH . 'assets/file/csv_guru_template.csv', null);
-      }
-   }
+        $submit = inputPost('submit');
+        $response = \Config\Services::response();
+        if ($submit == 'csv_siswa_template') {
+            return $response->download(FCPATH . 'assets/file/csv_siswa_template.csv', null);
+        } elseif ($submit == 'csv_guru_template') {
+            return $response->download(FCPATH . 'assets/file/csv_guru_template.csv', null);
+        }
+    }
 }

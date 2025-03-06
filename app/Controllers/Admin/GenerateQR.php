@@ -10,42 +10,49 @@ use App\Models\SiswaModel;
 
 class GenerateQR extends BaseController
 {
-   protected SiswaModel $siswaModel;
-   protected KelasModel $kelasModel;
+    protected SiswaModel $siswaModel;
+    protected KelasModel $kelasModel;
 
-   protected GuruModel $guruModel;
+    protected GuruModel $guruModel;
 
-   public function __construct()
-   {
-      $this->siswaModel = new SiswaModel();
-      $this->kelasModel = new KelasModel();
+    public function __construct()
+    {
+        $this->siswaModel = new SiswaModel();
+        $this->kelasModel = new KelasModel();
 
-      $this->guruModel = new GuruModel();
-   }
+        $this->guruModel = new GuruModel();
+    }
 
-   public function index()
-   {
-      $siswa = $this->siswaModel->getAllSiswaWithKelas();
-      $kelas = $this->kelasModel->getDataKelas();
-      $guru = $this->guruModel->getAllGuru();
+    public function index()
+    {
+        if (user()->toArray()['is_superadmin'] != '1') {
+            return redirect()->to('admin');
+        }
+        $siswa = $this->siswaModel->getAllSiswaWithKelas();
+        $kelas = $this->kelasModel->getDataKelas();
+        $guru = $this->guruModel->getAllGuru();
 
-      $data = [
-         'title' => 'Generate QR Code',
-         'ctx' => 'qr',
-         'siswa' => $siswa,
-         'kelas' => $kelas,
-         'guru' => $guru
-      ];
+        $data = [
+            'title' => 'Generate QR Code',
+            'ctx' => 'qr',
+            'siswa' => $siswa,
+            'kelas' => $kelas,
+            'guru' => $guru
+        ];
 
-      return view('admin/generate-qr/generate-qr', $data);
-   }
+        return view('admin/generate-qr/generate-qr', $data);
+    }
 
-   public function getSiswaByKelas()
-   {
-      $idKelas = $this->request->getVar('idKelas');
+    public function getSiswaByKelas()
+    {
+        if (user()->toArray()['is_superadmin'] != '1') {
+            return redirect()->to('admin');
+        }
 
-      $siswa = $this->siswaModel->getSiswaByKelas($idKelas);
+        $idKelas = $this->request->getVar('idKelas');
 
-      return $this->response->setJSON($siswa);
-   }
+        $siswa = $this->siswaModel->getSiswaByKelas($idKelas);
+
+        return $this->response->setJSON($siswa);
+    }
 }

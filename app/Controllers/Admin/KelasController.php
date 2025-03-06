@@ -62,6 +62,10 @@ class KelasController extends BaseController
      */
     public function tambahKelas()
     {
+        if (user()->toArray()['is_superadmin'] != '1') {
+            return redirect()->to('admin/kelas');
+        }
+
         $data['ctx'] = 'kelas';
         $data['title'] = 'Tambah Data Kelas';
         $data['jurusan'] = $this->jurusanModel->findAll();
@@ -76,6 +80,10 @@ class KelasController extends BaseController
      */
     public function tambahKelasPost()
     {
+        if (user()->toArray()['is_superadmin'] != '1') {
+            return redirect()->to('admin/kelas');
+        }
+
         $val = \Config\Services::validation();
         $val->setRule('kelas', 'Kelas', 'required|max_length[32]');
         $val->setRule('id_jurusan', 'Jurusan', 'required|numeric');
@@ -103,6 +111,10 @@ class KelasController extends BaseController
      */
     public function editKelas($id)
     {
+        if (user()->toArray()['is_superadmin'] != '1') {
+            return redirect()->to('admin/kelas');
+        }
+
         $data['title'] = 'Edit Kelas';
         $data['ctx'] = 'kelas';
         $data['jurusan'] = $this->jurusanModel->findAll();
@@ -121,6 +133,10 @@ class KelasController extends BaseController
      */
     public function editKelasPost()
     {
+        if (user()->toArray()['is_superadmin'] != '1') {
+            return redirect()->to('admin/kelas');
+        }
+
         $val = \Config\Services::validation();
         $val->setRule('kelas', 'Kelas', 'required|max_length[32]');
         $val->setRule('id_jurusan', 'Jurusan', 'required|numeric');
@@ -146,6 +162,10 @@ class KelasController extends BaseController
      */
     public function deleteKelasPost($id = null)
     {
+        if (user()->toArray()['is_superadmin'] != '1') {
+            return redirect()->to('admin/kelas');
+        }
+
         $id = inputPost('id');
         $kelas = $this->kelasModel->getKelas($id);
         if (!empty($kelas)) {
